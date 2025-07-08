@@ -41,12 +41,13 @@ import {
 // Import Home View functions
 import {
     renderNextConsultation,
+    // renderTasks function is also from homeView, was missing from previous user snippet for imports but present in registerRenderFunctions
     renderTasks
 } from './views/homeView.js';
 
 // Global/module-level variables
 let consultationItems = [];
-let globalScreensRef;
+let globalScreensRef; // To hold screenElements for functions outside DOMContentLoaded if needed later
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Elements Cache for Screen Manager ---
@@ -92,6 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'fab-ai'
     );
 
+    // Register ALL render functions that are called by screenManager
+    // This includes those still locally defined in this file for now.
     registerRenderFunctions({
         renderWelcomeScreen,
         renderOnboardingScreen,
@@ -100,28 +103,31 @@ document.addEventListener('DOMContentLoaded', () => {
         renderRegisterSuccessScreen,
         renderForgotPasswordScreen,
         renderForgotSuccessScreen,
-        renderNextConsultation,
-        renderTasks,
-        renderPatientHistory,
-        renderFinancialScreen,
-        renderDevelopmentScreen,
-        renderSecurityScreen,
-        renderSupportScreen,
-        renderReferralsScreen,
-        renderRewardsScreen,
-        renderCommunityForum,
-        renderForumTopicDetail,
-        renderAgenda,
-        renderPatients,
-        renderPatientList,
-        renderProfile,
-        renderWaitingRoom,
-        renderConsultationScreen,
-        renderReviewSignScreen,
-        renderPaymentMethodDetails,
+        renderNextConsultation, // From homeView
+        renderTasks,            // From homeView
+        renderPatientHistory,   // Local
+        renderFinancialScreen,  // Local
+        renderDevelopmentScreen,// Local
+        renderSecurityScreen,   // Local
+        renderSupportScreen,    // Local
+        renderReferralsScreen,  // Local
+        renderRewardsScreen,    // Local
+        renderCommunityForum,   // Local
+        renderForumTopicDetail, // Local
+        renderAgenda,           // Local
+        renderPatients,         // Local
+        renderPatientList,      // Local (helper for renderPatients)
+        renderProfile,          // Local
+        renderWaitingRoom,      // Local
+        renderConsultationScreen, // Local
+        renderReviewSignScreen,   // Local
+        renderPaymentMethodDetails, // Local (helper for renderSecurityScreen)
     });
 
     // --- Render Functions (Local to app.js, to be moved to view modules later) ---
+    // Note: renderWelcomeScreen, renderOnboardingScreen, etc., and renderNextConsultation, renderTasks are imported
+    // Their local definitions should have been removed (or fully commented out).
+    // For clarity, I am removing the commented-out local versions of already imported functions.
 
     function renderAgenda(screenElement) {
         if (!screenElement) screenElement = globalScreensRef.agenda;
@@ -433,31 +439,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="flex justify-center gap-2">
                      <button id="copy-code-btn" class="bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-lg flex-1">Copiar</button>
-                     <a href="https://api.whatsapp.com/send?text=Usa%20mi%20código%20VITALIS-APEREZ%20para%20unirte%20a%20Vitalis%20AI%20y%20gana%20beneficios." target="_blank" class="bg-green-500 text-white font-semibold px-4 py-2 rounded-lg flex-1 flex items-center justify-center gap-2">
-                         <i class="ph-whatsapp-logo"></i> Compartir
-                     </a>
+                     <a href="https://api.whatsapp.com/send?text=Usa%20mi%20código%20VITALIS-APEREZ%20para%20unirte%20a%20Vitalis%20AI%20y%20gana%20beneficios." target="_blank" class="bg-green-500 text-white font-semibold px-4 py-2 rounded-lg flex-1 flex items-center justify-center gap-2"><i class="ph-whatsapp-logo"></i> Compartir</a>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-white p-4 rounded-lg border border-gray-200 text-center">
-                    <p class="text-sm font-semibold text-gray-500">Total Referidos</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-1">${totalReferrals}</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg border border-gray-200 text-center">
-                    <p class="text-sm font-semibold text-gray-500">Puntos Ganados</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-1">${totalEarnings.toLocaleString()}</p>
-                </div>
+                <div class="bg-white p-4 rounded-lg border border-gray-200 text-center"><p class="text-sm font-semibold text-gray-500">Total Referidos</p><p class="text-3xl font-bold text-gray-800 mt-1">${totalReferrals}</p></div>
+                <div class="bg-white p-4 rounded-lg border border-gray-200 text-center"><p class="text-sm font-semibold text-gray-500">Puntos Ganados</p><p class="text-3xl font-bold text-gray-800 mt-1">${totalEarnings.toLocaleString()}</p></div>
             </div>
             <div>
                 <h2 class="font-bold text-gray-800 text-lg mb-3">Historial de Referidos</h2>
                 <div class="space-y-3">
                     ${referralsDB.map(ref => {
-                        let statusClass = '';
-                        switch(ref.status) {
-                            case 'Completado': statusClass = 'bg-green-100 text-green-800'; break;
-                            case 'Pendiente': statusClass = 'bg-yellow-100 text-yellow-800'; break;
-                        }
-                        return `<div class="bg-white p-4 rounded-lg border flex justify-between items-center"><div><p class="font-semibold text-gray-800">${ref.name}</p><p class="text-xs text-gray-500">Referido el: ${ref.date}</p></div><div class="text-right"><p class="font-bold text-green-600">+ ${ref.earnings} Puntos</p><span class="text-xs font-bold px-2 py-0.5 rounded-full ${statusClass}">${ref.status}</span></div></div>`
+                        let sc = ref.status === 'Completado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                        return `<div class="bg-white p-4 rounded-lg border flex justify-between items-center"><div><p class="font-semibold text-gray-800">${ref.name}</p><p class="text-xs text-gray-500">Referido el: ${ref.date}</p></div><div class="text-right"><p class="font-bold text-green-600">+ ${ref.earnings} Puntos</p><span class="text-xs font-bold px-2 py-0.5 rounded-full ${sc}">${ref.status}</span></div></div>`
                     }).join('')}
                 </div>
             </div>`;
@@ -473,13 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
              <div class="bg-white p-4 rounded-lg border mb-4">
                   <div>
-                    <div class="flex justify-between items-center text-sm font-semibold mb-1">
-                        <span>${professionalData.level}</span>
-                        <span>${professionalData.nextLevel}</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-yellow-400 h-2.5 rounded-full" style="width: ${Math.min((professionalData.points / professionalData.nextLevelPoints) * 100, 100)}%"></div>
-                    </div>
+                    <div class="flex justify-between items-center text-sm font-semibold mb-1"><span>${professionalData.level}</span><span>${professionalData.nextLevel}</span></div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-yellow-400 h-2.5 rounded-full" style="width: ${Math.min((professionalData.points / professionalData.nextLevelPoints) * 100, 100)}%"></div></div>
                     <p class="text-center text-xs text-gray-500 mt-1">Faltan ${Math.max(0, professionalData.nextLevelPoints - professionalData.points)} puntos para el siguiente nivel</p>
                 </div>
             </div>
@@ -491,21 +480,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div>
                 <h2 class="font-bold text-gray-800 text-lg mb-3">Catálogo de Recompensas</h2>
                 <div id="rewards-catalog" class="space-y-3">
-                    ${professionalData.rewards.map(reward => {
-                        const canAfford = professionalData.points >= reward.cost;
-                        let buttonText = reward.type === 'apply' ? 'Postular' : 'Canjear';
-                        let buttonDisabled = !canAfford;
-                        let buttonClass = canAfford ? 'bg-blue-600 text-white' : 'bg-blue-300 text-white cursor-not-allowed';
-                        if (reward.status === 'applied') {
-                            buttonText = 'Postulación Enviada';
-                            buttonDisabled = true;
-                            buttonClass = 'bg-yellow-500 text-white cursor-not-allowed';
-                        } else if (reward.claimed) {
-                            buttonText = 'Canjeado';
-                            buttonDisabled = true;
-                            buttonClass = 'bg-gray-300 text-gray-500 cursor-not-allowed';
-                        }
-                        return `<div class="bg-white p-4 rounded-lg border"><h3 class="font-bold text-gray-800">${reward.title}</h3><p class="text-sm text-gray-600 my-2">${reward.description}</p><div class="flex justify-between items-center mt-3"><p class="font-bold text-blue-600">${reward.cost} Puntos</p><button class="redeem-reward-btn px-4 py-2 rounded-lg font-semibold text-sm ${buttonClass}" data-reward-id="${reward.id}" ${buttonDisabled ? 'disabled' : ''}>${buttonText}</button></div></div>`;
+                    ${professionalData.rewards.map(r => {
+                        const canAfford = professionalData.points >= r.cost; let btnTxt = r.type === 'apply' ? 'Postular' : 'Canjear', btnDisabled = !canAfford, btnCls = canAfford ? 'bg-blue-600 text-white' : 'bg-blue-300 text-white cursor-not-allowed';
+                        if (r.status === 'applied') { btnTxt = 'Postulación Enviada'; btnDisabled = true; btnCls = 'bg-yellow-500 text-white cursor-not-allowed'; }
+                        else if (r.claimed) { btnTxt = 'Canjeado'; btnDisabled = true; btnCls = 'bg-gray-300 text-gray-500 cursor-not-allowed'; }
+                        return `<div class="bg-white p-4 rounded-lg border"><h3 class="font-bold text-gray-800">${r.title}</h3><p class="text-sm text-gray-600 my-2">${r.description}</p><div class="flex justify-between items-center mt-3"><p class="font-bold text-blue-600">${r.cost} Puntos</p><button class="redeem-reward-btn px-4 py-2 rounded-lg font-semibold text-sm ${btnCls}" data-reward-id="${r.id}" ${btnDisabled ? 'disabled' : ''}>${btnTxt}</button></div></div>`;
                     }).join('')}
                 </div>
             </div>`;
@@ -543,11 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!screenElement) screenElement = globalScreensRef.waitingRoom;
         if (!screenElement) return;
         screenElement.innerHTML = `
-            <i class="ph-clock-countdown text-6xl text-blue-600"></i>
-            <h2 class="text-2xl font-bold text-gray-800 mt-4">Sala de Espera Virtual</h2>
+            <i class="ph-clock-countdown text-6xl text-blue-600"></i><h2 class="text-2xl font-bold text-gray-800 mt-4">Sala de Espera Virtual</h2>
             <p class="text-gray-600 mt-2 max-w-sm">Aguardando a que el paciente, Jorge García, se conecte a la consulta.</p>
-            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mt-8"></div>
-            <p class="text-sm text-gray-500 mt-8">Se ha notificado al paciente. La consulta comenzará automáticamente.</p>`;
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mt-8"></div><p class="text-sm text-gray-500 mt-8">Se ha notificado al paciente. La consulta comenzará automáticamente.</p>`;
     }
 
     function renderConsultationScreen(screenElement) {
@@ -556,36 +533,20 @@ document.addEventListener('DOMContentLoaded', () => {
         consultationItems = [];
         screenElement.innerHTML = `
             <div class="flex-grow relative bg-black flex items-center justify-center">
-                <div class="absolute top-4 left-4 bg-black/50 p-2 rounded-lg text-xs flex items-center gap-2">
-                    <i class="ph-microphone text-green-400 animate-pulse"></i>
-                    <span>Vitalis AI está escuchando...</span>
-                </div>
+                <div class="absolute top-4 left-4 bg-black/50 p-2 rounded-lg text-xs flex items-center gap-2"><i class="ph-microphone text-green-400 animate-pulse"></i><span>Vitalis AI está escuchando...</span></div>
                 <img src="https://placehold.co/400x300/cccccc/333333?text=Video+del+Paciente" class="w-full h-full object-cover" alt="[Video del paciente]">
-                <div class="absolute top-4 right-4 w-24 h-32 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700">
-                     <img src="https://placehold.co/96x96/bfdbfe/1e3a8a?text=AP" class="w-full h-full object-cover" alt="[Vista previa del médico]">
-                </div>
+                <div class="absolute top-4 right-4 w-24 h-32 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700"><img src="https://placehold.co/96x96/bfdbfe/1e3a8a?text=AP" class="w-full h-full object-cover" alt="[Vista previa del médico]"></div>
             </div>
             <div class="bg-white text-gray-800 p-2 h-2/5 flex flex-col">
-                <div class="flex-shrink-0 flex border-b border-gray-200">
-                    <div class="segmented-control w-full mb-2">
-                        <button class="clinical-tab-btn active" data-target="panel-triage">Triaje</button>
-                        <button class="clinical-tab-btn" data-target="panel-soap">SOAP (IA)</button>
-                        <button class="clinical-tab-btn" data-target="panel-exams">Exámenes</button>
-                    </div>
-                </div>
+                <div class="flex-shrink-0 flex border-b border-gray-200"><div class="segmented-control w-full mb-2"><button class="clinical-tab-btn active" data-target="panel-triage">Triaje</button><button class="clinical-tab-btn" data-target="panel-soap">SOAP (IA)</button><button class="clinical-tab-btn" data-target="panel-exams">Exámenes</button></div></div>
                 <div id="consultation-panel-container" class="flex-grow overflow-y-auto mt-2 px-2">
-                    <div id="panel-triage" class="clinical-panel-content text-sm space-y-2">
-                        <p><strong>Talla:</strong> 1.75 m</p><p><strong>Peso:</strong> 80 kg</p><p><strong>Temperatura:</strong> 36.8 °C</p><p><strong>Presión Arterial:</strong> 145/92 mmHg</p><p><strong>Motivo de Consulta (previo):</strong> "Dolor de cabeza y mareos."</p>
-                    </div>
+                    <div id="panel-triage" class="clinical-panel-content text-sm space-y-2"><p><strong>Talla:</strong> 1.75 m</p><p><strong>Peso:</strong> 80 kg</p><p><strong>Temperatura:</strong> 36.8 °C</p><p><strong>Presión Arterial:</strong> 145/92 mmHg</p><p><strong>Motivo de Consulta (previo):</strong> "Dolor de cabeza y mareos."</p></div>
                     <div id="panel-soap" class="clinical-panel-content hidden space-y-2"><p class="text-center text-gray-400 text-sm">Las sugerencias de la IA aparecerán aquí mientras habla.</p></div>
                     <div id="panel-exams" class="clinical-panel-content hidden text-sm"><a href="#" class="block p-2 rounded-md bg-gray-100 hover:bg-gray-200">Perfil_Lipidico_25-06-25.pdf</a></div>
                 </div>
             </div>
             <div class="bg-gray-800 p-3 flex justify-between items-center">
-                  <div class="flex space-x-2">
-                    <button id="capture-btn" class="bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center" title="Tomar Foto"><i class="ph-camera text-2xl"></i></button>
-                    <button id="manual-add-btn" class="bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center" title="Añadir/Editar Manualmente"><i class="ph-list-plus text-2xl"></i></button>
-                  </div>
+                  <div class="flex space-x-2"><button id="capture-btn" class="bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center" title="Tomar Foto"><i class="ph-camera text-2xl"></i></button><button id="manual-add-btn" class="bg-gray-700 text-white w-12 h-12 rounded-full flex items-center justify-center" title="Añadir/Editar Manualmente"><i class="ph-list-plus text-2xl"></i></button></div>
                   <button id="end-consultation-btn" class="bg-red-600 text-white font-bold py-3 px-6 rounded-full">Finalizar Consulta</button>
             </div>`;
         simulateAIConsultation();
@@ -599,16 +560,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const unconfirmedItems = task.items.filter(item => item.status === 'suggested' && ['order', 'follow-up', 'photo'].includes(item.type));
         const signButtonDisabled = unconfirmedItems.length > 0;
         screenElement.innerHTML = `
-            <div class="flex items-center mb-4">
-                <button id="back-to-home-from-review" class="text-2xl text-gray-600 mr-4"><i class="ph-arrow-left"></i></button>
-                <h1 class="text-xl font-bold text-gray-800">Revisar y Firmar Registro</h1>
-            </div>
+            <div class="flex items-center mb-4"><button id="back-to-home-from-review" class="text-2xl text-gray-600 mr-4"><i class="ph-arrow-left"></i></button><h1 class="text-xl font-bold text-gray-800">Revisar y Firmar Registro</h1></div>
             <div class="bg-white p-3 rounded-lg border mb-4"><p class="text-sm text-center"><span class="font-bold">Paciente:</span> ${task.patient} | <span class="font-bold">Fecha:</span> ${new Date().toLocaleDateString('es-PE')}</p></div>
             <div class="space-y-4">
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">S: Subjetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${task.items.find(item => item.type === 'subjective')?.content || ''}</textarea></div></details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">O: Objetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${task.items.find(item => item.type === 'objective')?.content || ''}</textarea></div></details>
+                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">S: Subjetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${task.items.find(i => i.type === 'subjective')?.content || ''}</textarea></div></details>
+                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">O: Objetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${task.items.find(i => i.type === 'objective')?.content || ''}</textarea></div></details>
                 <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">A: Apreciación / Diagnóstico <i class="ph-caret-down"></i></summary><div class="p-3 border-t space-y-2"><div class="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-md"><span class="flex-grow">I10 - Hipertensión Esencial (Primaria)</span><button class="text-blue-500"><i class="ph-x"></i></button></div><input type="text" placeholder="Añadir diagnóstico (CIE-10)..." class="w-full p-2 border rounded-md text-sm"></div></details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">P: Plan de Trabajo <i class="ph-caret-down"></i></summary><div class="p-3 border-t space-y-3">${task.items.filter(item => ['order', 'follow-up', 'photo'].includes(item.type) && item.status !== 'discarded').map(order => `<div class="p-3 border rounded-lg flex justify-between items-center ${order.status === 'confirmed' ? 'bg-gray-50' : 'bg-yellow-100 border-yellow-400'}"><div><p class="font-bold text-sm">${order.title}</p><p class="text-sm text-gray-600">${order.content}</p></div><div class="flex flex-col space-y-1">${order.status !== 'confirmed' ? `<button class="review-confirm-btn text-xs bg-green-100 text-green-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${order.id}">Confirmar</button>` : ''}<button class="review-edit-btn text-xs bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${order.id}">Editar</button></div></div>`).join('') || '<p class="text-sm text-gray-500">No hay un plan de trabajo definido.</p>'}<button class="w-full text-sm font-semibold text-blue-600 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 review-add-btn" data-task-id="${task.id}">Añadir Item al Plan</button></div></details>
+                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">P: Plan de Trabajo <i class="ph-caret-down"></i></summary><div class="p-3 border-t space-y-3">${task.items.filter(i => ['order', 'follow-up', 'photo'].includes(i.type) && i.status !== 'discarded').map(o => `<div class="p-3 border rounded-lg flex justify-between items-center ${o.status === 'confirmed' ? 'bg-gray-50' : 'bg-yellow-100 border-yellow-400'}"><div><p class="font-bold text-sm">${o.title}</p><p class="text-sm text-gray-600">${o.content}</p></div><div class="flex flex-col space-y-1">${o.status !== 'confirmed' ? `<button class="review-confirm-btn text-xs bg-green-100 text-green-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Confirmar</button>` : ''}<button class="review-edit-btn text-xs bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Editar</button></div></div>`).join('') || '<p class="text-sm text-gray-500">No hay un plan de trabajo definido.</p>'}<button class="w-full text-sm font-semibold text-blue-600 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 review-add-btn" data-task-id="${task.id}">Añadir Item al Plan</button></div></details>
             </div>
             <div class="mt-6"><h4 class="font-semibold mb-2 text-gray-800">Firma del Médico</h4><div class="bg-gray-100 border-dashed border-2 border-gray-300 rounded-lg p-4 text-center"><img src="https://placehold.co/200x50/000000/ffffff?text=Dra.+Ana+Pérez" alt="[Firma del médico]" class="mx-auto"></div></div>
             <div class="mt-2 text-center"><button id="sign-and-seal-btn" data-task-id="${task.id}" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold ${signButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${signButtonDisabled ? 'disabled' : ''}>Firmar y Sellar Registro</button>${signButtonDisabled ? '<p class="text-xs text-red-600 mt-2">Debe confirmar todas las sugerencias del Plan de Trabajo antes de firmar.</p>' : ''}</div>`;
@@ -623,22 +581,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h1 class="text-xl font-bold text-gray-800">Foro de la Comunidad</h1>
             </div>
             <div class="flex gap-2 mb-4">
-                <div class="relative flex-grow">
-                    <input type="text" id="forum-search-input" placeholder="Buscar en el foro..." class="w-full p-3 pl-10 border border-gray-300 rounded-lg bg-white">
-                    <i class="ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                </div>
+                <div class="relative flex-grow"><input type="text" id="forum-search-input" placeholder="Buscar en el foro..." class="w-full p-3 pl-10 border border-gray-300 rounded-lg bg-white"><i class="ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i></div>
                 <button id="new-topic-btn" class="bg-blue-600 text-white px-4 rounded-lg font-semibold flex items-center justify-center"><i class="ph-plus text-xl"></i></button>
             </div>
             <div id="forum-topics-container" class="space-y-3">
-                ${filteredTopics.map(topic => `
-                    <div class="bg-white p-4 rounded-lg border border-gray-200 cursor-pointer view-topic-btn" data-topic-id="${topic.id}">
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-gray-800 mb-1 flex-grow">${topic.title}</h3>
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800 whitespace-nowrap">${topic.category}</span>
-                        </div>
-                        <p class="text-xs text-gray-500">Por: ${topic.author} - ${topic.date}</p>
-                        <div class="flex items-center justify-end text-sm text-gray-600 mt-2"><i class="ph-chat-circle-dots mr-1"></i><span>${topic.comments.length} Comentarios</span></div>
-                    </div>`).join('') || '<p class="text-center text-gray-500 mt-8">No se encontraron temas.</p>'}
+                ${filteredTopics.map(topic => `<div class="bg-white p-4 rounded-lg border border-gray-200 cursor-pointer view-topic-btn" data-topic-id="${topic.id}"><div class="flex justify-between items-start"><h3 class="font-bold text-gray-800 mb-1 flex-grow">${topic.title}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800 whitespace-nowrap">${topic.category}</span></div><p class="text-xs text-gray-500">Por: ${topic.author} - ${topic.date}</p><div class="flex items-center justify-end text-sm text-gray-600 mt-2"><i class="ph-chat-circle-dots mr-1"></i><span>${topic.comments.length} Comentarios</span></div></div>`).join('') || '<p class="text-center text-gray-500 mt-8">No se encontraron temas.</p>'}
             </div>`;
     }
 
@@ -648,56 +595,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const topic = professionalData.forumTopics.find(t => t.id === topicId);
         if (!topic) return;
         screenElement.innerHTML = `
-            <div class="flex items-center mb-4">
-                <button class="back-to-forum text-2xl text-gray-600 mr-4"><i class="ph-arrow-left"></i></button>
-                <h1 class="text-xl font-bold text-gray-800 truncate">${topic.title}</h1>
-            </div>
-            <div class="bg-white p-4 rounded-lg border mb-4">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="text-sm text-gray-600">Por <span class="font-semibold">${topic.author}</span> el ${topic.date}</p>
-                    <span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800">${topic.category}</span>
-                </div>
-                <p class="text-gray-800">${topic.description}</p>
-            </div>
+            <div class="flex items-center mb-4"><button class="back-to-forum text-2xl text-gray-600 mr-4"><i class="ph-arrow-left"></i></button><h1 class="text-xl font-bold text-gray-800 truncate">${topic.title}</h1></div>
+            <div class="bg-white p-4 rounded-lg border mb-4"><div class="flex justify-between items-center mb-2"><p class="text-sm text-gray-600">Por <span class="font-semibold">${topic.author}</span> el ${topic.date}</p><span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800">${topic.category}</span></div><p class="text-gray-800">${topic.description}</p></div>
             <h2 class="font-bold text-lg text-gray-800 mb-3">Comentarios (${topic.comments.length})</h2>
             <div id="comments-container" class="space-y-3 mb-4">
-                ${topic.comments.map(comment => `<div class="bg-white p-3 rounded-lg border"><p class="text-sm text-gray-800">${comment.text}</p><p class="text-xs text-gray-500 mt-2">-- <span class="font-semibold">${comment.author}</span>, ${comment.date}</p></div>`).join('') || '<p class="text-sm text-gray-500 bg-white p-3 rounded-lg border">No hay comentarios aún. ¡Sé el primero en participar!</p>'}
+                ${topic.comments.map(c => `<div class="bg-white p-3 rounded-lg border"><p class="text-sm text-gray-800">${c.text}</p><p class="text-xs text-gray-500 mt-2">-- <span class="font-semibold">${c.author}</span>, ${c.date}</p></div>`).join('') || '<p class="text-sm text-gray-500 bg-white p-3 rounded-lg border">No hay comentarios aún. ¡Sé el primero en participar!</p>'}
             </div>
-            <div class="bg-white p-3 rounded-lg border">
-                 <h3 class="font-semibold text-gray-700 mb-2">Añadir un Comentario</h3>
-                 <textarea id="new-comment-input" class="w-full p-2 border rounded-md h-20" placeholder="Escribe tu comentario..."></textarea>
-                 <button id="submit-comment-btn" data-topic-id="${topic.id}" class="w-full bg-blue-600 text-white py-2 mt-2 rounded-lg font-semibold">Enviar Comentario</button>
-            </div>`;
+            <div class="bg-white p-3 rounded-lg border"><h3 class="font-semibold text-gray-700 mb-2">Añadir un Comentario</h3><textarea id="new-comment-input" class="w-full p-2 border rounded-md h-20" placeholder="Escribe tu comentario..."></textarea><button id="submit-comment-btn" data-topic-id="${topic.id}" class="w-full bg-blue-600 text-white py-2 mt-2 rounded-lg font-semibold">Enviar Comentario</button></div>`;
     }
 
     function openNewTopicModal() {
-        showModal(`
-            <div class="modal-overlay">
-                <div class="modal-content">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-lg text-gray-800">Iniciar Nuevo Tema de Debate</h2>
-                        <button class="modal-close-btn text-gray-500"><i class="ph-x text-xl"></i></button>
-                    </div>
-                    <div class="space-y-3">
-                        <input id="new-topic-title" type="text" placeholder="Título del Tema" class="w-full p-2 border rounded-md">
-                        <textarea id="new-topic-description" class="w-full p-2 border rounded-md h-24" placeholder="Describe el tema o tu pregunta inicial..."></textarea>
-                        <select id="new-topic-category" class="w-full p-2 border rounded-md bg-white">
-                             <option value="" disabled selected>Seleccionar Categoría</option><option>Cardiología</option><option>Pediatría</option><option>Ginecología</option><option>Tecnología Médica</option><option>Casos Clínicos</option><option>General</option>
-                        </select>
-                    </div>
-                    <div class="flex space-x-2 mt-6">
-                        <button class="modal-close-btn w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold">Cancelar</button>
-                        <button id="submit-new-topic-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold">Publicar Tema</button>
-                    </div>
-                </div>
-            </div>`);
+        showModal(`<div class="modal-overlay"><div class="modal-content"><div class="flex justify-between items-center mb-4"><h2 class="font-bold text-lg text-gray-800">Iniciar Nuevo Tema de Debate</h2><button class="modal-close-btn text-gray-500"><i class="ph-x text-xl"></i></button></div><div class="space-y-3"><input id="new-topic-title" type="text" placeholder="Título del Tema" class="w-full p-2 border rounded-md"><textarea id="new-topic-description" class="w-full p-2 border rounded-md h-24" placeholder="Describe el tema o tu pregunta inicial..."></textarea><select id="new-topic-category" class="w-full p-2 border rounded-md bg-white"><option value="" disabled selected>Seleccionar Categoría</option><option>Cardiología</option><option>Pediatría</option><option>Ginecología</option><option>Tecnología Médica</option><option>Casos Clínicos</option><option>General</option></select></div><div class="flex space-x-2 mt-6"><button class="modal-close-btn w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold">Cancelar</button><button id="submit-new-topic-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold">Publicar Tema</button></div></div></div>`);
     }
 
-    // Event Listeners (delegated)
+    // Event Listeners (to be moved to handler modules)
     document.body.addEventListener('click', (e) => {
-        if (e.target.matches('.modal-overlay') || e.target.matches('.modal-close-btn')) {
-            hideModal();
-        }
+        if (e.target.matches('.modal-overlay') || e.target.matches('.modal-close-btn')) { hideModal(); }
         if (e.target.closest('#login-btn')) {
             showToast("Iniciando sesión...");
             setTimeout(() => {
@@ -755,8 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('.review-task-btn')) { showScreen('reviewSign', parseInt(e.target.closest('.review-task-btn').dataset.taskId)); }
         if (e.target.closest('#back-to-home-from-review')) { showScreen('home'); }
         if (e.target.closest('#sign-and-seal-btn')) {
-            const taskId = parseInt(e.target.dataset.taskId);
-            const task = tasks.find(t => t.id === taskId);
+            const taskId = parseInt(e.target.dataset.taskId), task = tasks.find(t => t.id === taskId);
             if (task) {
                 task.status = 'completed'; task.completedAt = new Date().toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
                 const countEl = document.getElementById('consultation-count'); animateValue(countEl, parseInt(countEl.textContent), parseInt(countEl.textContent) + 1, 1000);
@@ -796,21 +708,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if(e.target.closest('#confirm-manual-add-btn')) {
             const select = document.getElementById('manual-item-select'), textarea = document.getElementById('manual-item-content');
-            const { fromReview, taskId, itemId: currentItemIdStr } = e.target.dataset; // Note: itemId might be from select, not button
-            const currentItemId = parseInt(select.value); // Use select's value for item ID
-            const isNew = isNaN(currentItemId) || !targetArray.find(i => i.id === currentItemId); // Recheck if it's new based on select
-            const targetArray = fromReview === 'true' ? tasks.find(t => t.id === parseInt(taskId)).items : consultationItems;
+            const fromReview = e.target.dataset.fromReview === 'true';
+            const taskId = parseInt(e.target.dataset.taskId);
+            const selectedOptionValue = select.value;
+            const targetArray = fromReview ? tasks.find(t => t.id === taskId).items : consultationItems;
+            let itemToUpdate;
+            let isNew = false;
 
-            if (isNew) { // If select.value is a type like "prescription"
-                const type = select.value;
+            if (!isNaN(parseInt(selectedOptionValue))) { // Existing item ID
+                itemToUpdate = targetArray.find(i => i.id === parseInt(selectedOptionValue));
+            } else { // New item type
+                isNew = true;
+                const newType = selectedOptionValue;
                 const titles = { 'prescription': 'PRESCRIPCIÓN', 'lab_order': 'ORDEN DE LABORATORIO', 'certificate': 'CERTIFICADO DE DESCANSO' };
                 const icons = { 'prescription': 'pill', 'lab_order': 'test-tube', 'certificate': 'bed' };
-                targetArray.push({ id: Date.now(), type: 'order', icon: icons[type], title: titles[type], content: textarea.value, status: 'confirmed' });
-            } else { // Editing existing item
-                const item = targetArray.find(i => i.id === currentItemId);
-                if(item) { item.content = textarea.value; item.status = 'confirmed'; }
+                itemToUpdate = { id: Date.now(), type: 'order', icon: icons[newType], title: titles[newType], status: 'confirmed' };
             }
-            if(fromReview === 'true') { showScreen('reviewSign', parseInt(taskId)); } else { renderConsultationItems(); }
+
+            if (itemToUpdate) {
+                itemToUpdate.content = textarea.value;
+                itemToUpdate.status = 'confirmed'; // Always confirm on save from this modal
+                if (isNew) {
+                    targetArray.push(itemToUpdate);
+                }
+            }
+            if(fromReview) { showScreen('reviewSign', taskId); } else { renderConsultationItems(); }
             hideModal();
         }
         if (e.target.matches('.clinical-tab-btn')) {
