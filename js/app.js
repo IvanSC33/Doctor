@@ -556,17 +556,56 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!screenElement) screenElement = globalScreensRef.reviewSign;
         if (!screenElement) return;
         const task = tasks.find(t => t.id === taskId);
-        if (!task) return;
-        const unconfirmedItems = task.items.filter(item => item.status === 'suggested' && ['order', 'follow-up', 'photo'].includes(item.type));
-        const signButtonDisabled = unconfirmedItems.length > 0;
+        if (!task || !Array.isArray(task.items)) { // Ensure task and task.items (as array) exist
+            console.error("Task not found or task.items is not an array for ID:", taskId);
+            // Optionally render an error message in the UI
+            screenElement.innerHTML = `<p class="p-4 text-red-500">Error: No se pudo cargar la tarea para revisión.</p>`;
+            return;
+        }
+
+        const subjectiveContent = task.items.find(item => item.type === 'subjective')?.content || '';
+        const objectiveContent = task.items.find(item => item.type === 'objective')?.content || '';
+
+        // Plan items are now filtered from the main task.items array
+        const planItemsToDisplay = task.items.filter(item =>
+            ['order', 'follow-up', 'photo'].includes(item.type) && item.status !== 'discarded'
+        );
+
+        const unconfirmedPlanItems = planItemsToDisplay.filter(item => item.status === 'suggested');
+        const signButtonDisabled = unconfirmedPlanItems.length > 0;
+
+        // For diagnostic (CIE-10), assuming it's stored differently or needs a specific structure if also in items
+        // For this example, let's assume CIE-10 might be an item of type 'diagnostic' or similar
+        const diagnosticItem = task.items.find(item => item.type === 'diagnostic'); // Example type
+        const diagnosticDisplay = diagnosticItem ?
+            `<div class="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-md">
+                <span class="flex-grow">${diagnosticItem.content}</span>
+                <button class="text-blue-500"><i class="ph-x"></i></button>
+            </div>` : '';
+
         screenElement.innerHTML = `
             <div class="flex items-center mb-4"><button id="back-to-home-from-review" class="text-2xl text-gray-600 mr-4"><i class="ph-arrow-left"></i></button><h1 class="text-xl font-bold text-gray-800">Revisar y Firmar Registro</h1></div>
             <div class="bg-white p-3 rounded-lg border mb-4"><p class="text-sm text-center"><span class="font-bold">Paciente:</span> ${task.patient} | <span class="font-bold">Fecha:</span> ${new Date().toLocaleDateString('es-PE')}</p></div>
             <div class="space-y-4">
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">S: Subjetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${task.items.find(i => i.type === 'subjective')?.content || ''}</textarea></div></details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">O: Objetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${task.items.find(i => i.type === 'objective')?.content || ''}</textarea></div></details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">A: Apreciación / Diagnóstico <i class="ph-caret-down"></i></summary><div class="p-3 border-t space-y-2"><div class="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-md"><span class="flex-grow">I10 - Hipertensión Esencial (Primaria)</span><button class="text-blue-500"><i class="ph-x"></i></button></div><input type="text" placeholder="Añadir diagnóstico (CIE-10)..." class="w-full p-2 border rounded-md text-sm"></div></details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">P: Plan de Trabajo <i class="ph-caret-down"></i></summary><div class="p-3 border-t space-y-3">${task.items.filter(i => ['order', 'follow-up', 'photo'].includes(i.type) && i.status !== 'discarded').map(o => `<div class="p-3 border rounded-lg flex justify-between items-center ${o.status === 'confirmed' ? 'bg-gray-50' : 'bg-yellow-100 border-yellow-400'}"><div><p class="font-bold text-sm">${o.title}</p><p class="text-sm text-gray-600">${o.content}</p></div><div class="flex flex-col space-y-1">${o.status !== 'confirmed' ? `<button class="review-confirm-btn text-xs bg-green-100 text-green-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Confirmar</button>` : ''}<button class="review-edit-btn text-xs bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Editar</button></div></div>`).join('') || '<p class="text-sm text-gray-500">No hay un plan de trabajo definido.</p>'}<button class="w-full text-sm font-semibold text-blue-600 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 review-add-btn" data-task-id="${task.id}">Añadir Item al Plan</button></div></details>
+                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">S: Subjetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${subjectiveContent}</textarea></div></details>
+                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">O: Objetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${objectiveContent}</textarea></div></details>
+                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">A: Apreciación / Diagnóstico <i class="ph-caret-down"></i></summary>
+                    <div class="p-3 border-t space-y-2">
+                        ${diagnosticDisplay}
+                        <input type="text" placeholder="Añadir diagnóstico (CIE-10)..." class="w-full p-2 border rounded-md text-sm">
+                    </div>
+                </details>
+                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">P: Plan de Trabajo <i class="ph-caret-down"></i></summary><div class="p-3 border-t space-y-3">
+                    ${planItemsToDisplay.length > 0 ? planItemsToDisplay.map(o => `
+                        <div class="p-3 border rounded-lg flex justify-between items-center ${o.status === 'confirmed' ? 'bg-gray-50' : 'bg-yellow-100 border-yellow-400'}">
+                            <div><p class="font-bold text-sm">${o.title}</p><p class="text-sm text-gray-600">${o.content}</p></div>
+                            <div class="flex flex-col space-y-1">
+                                ${o.status !== 'confirmed' ? `<button class="review-confirm-btn text-xs bg-green-100 text-green-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Confirmar</button>` : ''}
+                                <button class="review-edit-btn text-xs bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Editar</button>
+                            </div>
+                        </div>`).join('') : '<p class="text-sm text-gray-500">No hay un plan de trabajo definido.</p>'}
+                    <button class="w-full text-sm font-semibold text-blue-600 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 review-add-btn" data-task-id="${task.id}">Añadir Item al Plan</button>
+                </div></details>
             </div>
             <div class="mt-6"><h4 class="font-semibold mb-2 text-gray-800">Firma del Médico</h4><div class="bg-gray-100 border-dashed border-2 border-gray-300 rounded-lg p-4 text-center"><img src="https://placehold.co/200x50/000000/ffffff?text=Dra.+Ana+Pérez" alt="[Firma del médico]" class="mx-auto"></div></div>
             <div class="mt-2 text-center"><button id="sign-and-seal-btn" data-task-id="${task.id}" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold ${signButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${signButtonDisabled ? 'disabled' : ''}>Firmar y Sellar Registro</button>${signButtonDisabled ? '<p class="text-xs text-red-600 mt-2">Debe confirmar todas las sugerencias del Plan de Trabajo antes de firmar.</p>' : ''}</div>`;
