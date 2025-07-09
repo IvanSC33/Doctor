@@ -41,16 +41,14 @@ import {
 // Import Home View functions
 import {
     renderNextConsultation,
-    // renderTasks function is also from homeView, was missing from previous user snippet for imports but present in registerRenderFunctions
     renderTasks
 } from './views/homeView.js';
 
 // Global/module-level variables
 let consultationItems = [];
-let globalScreensRef; // To hold screenElements for functions outside DOMContentLoaded if needed later
+let globalScreensRef;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Elements Cache for Screen Manager ---
     const screenElements = {
         welcome: document.getElementById('screen-welcome'),
         onboarding: document.getElementById('screen-onboarding'),
@@ -93,8 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'fab-ai'
     );
 
-    // Register ALL render functions that are called by screenManager
-    // This includes those still locally defined in this file for now.
     registerRenderFunctions({
         renderWelcomeScreen,
         renderOnboardingScreen,
@@ -103,31 +99,28 @@ document.addEventListener('DOMContentLoaded', () => {
         renderRegisterSuccessScreen,
         renderForgotPasswordScreen,
         renderForgotSuccessScreen,
-        renderNextConsultation, // From homeView
-        renderTasks,            // From homeView
-        renderPatientHistory,   // Local
-        renderFinancialScreen,  // Local
-        renderDevelopmentScreen,// Local
-        renderSecurityScreen,   // Local
-        renderSupportScreen,    // Local
-        renderReferralsScreen,  // Local
-        renderRewardsScreen,    // Local
-        renderCommunityForum,   // Local
-        renderForumTopicDetail, // Local
-        renderAgenda,           // Local
-        renderPatients,         // Local
-        renderPatientList,      // Local (helper for renderPatients)
-        renderProfile,          // Local
-        renderWaitingRoom,      // Local
-        renderConsultationScreen, // Local
-        renderReviewSignScreen,   // Local
-        renderPaymentMethodDetails, // Local (helper for renderSecurityScreen)
+        renderNextConsultation,
+        renderTasks,
+        renderPatientHistory,
+        renderFinancialScreen,
+        renderDevelopmentScreen,
+        renderSecurityScreen,
+        renderSupportScreen,
+        renderReferralsScreen,
+        renderRewardsScreen,
+        renderCommunityForum,
+        renderForumTopicDetail,
+        renderAgenda,
+        renderPatients,
+        renderPatientList,
+        renderProfile,
+        renderWaitingRoom,
+        renderConsultationScreen,
+        renderReviewSignScreen, // This will now be the corrected version
+        renderPaymentMethodDetails,
     });
 
-    // --- Render Functions (Local to app.js, to be moved to view modules later) ---
-    // Note: renderWelcomeScreen, renderOnboardingScreen, etc., and renderNextConsultation, renderTasks are imported
-    // Their local definitions should have been removed (or fully commented out).
-    // For clarity, I am removing the commented-out local versions of already imported functions.
+    // --- START OF LOCAL RENDER FUNCTIONS (To be moved later) ---
 
     function renderAgenda(screenElement) {
         if (!screenElement) screenElement = globalScreensRef.agenda;
@@ -552,63 +545,94 @@ document.addEventListener('DOMContentLoaded', () => {
         simulateAIConsultation();
     }
 
+    // CORRECTED renderReviewSignScreen as per user feedback
     function renderReviewSignScreen(screenElement, taskId) {
         if (!screenElement) screenElement = globalScreensRef.reviewSign;
         if (!screenElement) return;
+
         const task = tasks.find(t => t.id === taskId);
-        if (!task || !Array.isArray(task.items)) { // Ensure task and task.items (as array) exist
-            console.error("Task not found or task.items is not an array for ID:", taskId);
-            // Optionally render an error message in the UI
-            screenElement.innerHTML = `<p class="p-4 text-red-500">Error: No se pudo cargar la tarea para revisión.</p>`;
+
+        if (!task || !Array.isArray(task.items)) {
+            console.error("Error: La tarea no se encontró o sus ítems no son un array. ID:", taskId);
+            screenElement.innerHTML = `<p class="p-4 text-center text-red-600">Error: No se pudo cargar la tarea para revisión.</p>`;
             return;
         }
 
         const subjectiveContent = task.items.find(item => item.type === 'subjective')?.content || '';
         const objectiveContent = task.items.find(item => item.type === 'objective')?.content || '';
-
-        // Plan items are now filtered from the main task.items array
-        const planItemsToDisplay = task.items.filter(item =>
+        const planItems = task.items.filter(item =>
             ['order', 'follow-up', 'photo'].includes(item.type) && item.status !== 'discarded'
         );
+        const signButtonDisabled = planItems.some(item => item.status === 'suggested');
 
-        const unconfirmedPlanItems = planItemsToDisplay.filter(item => item.status === 'suggested');
-        const signButtonDisabled = unconfirmedPlanItems.length > 0;
-
-        // For diagnostic (CIE-10), assuming it's stored differently or needs a specific structure if also in items
-        // For this example, let's assume CIE-10 might be an item of type 'diagnostic' or similar
-        const diagnosticItem = task.items.find(item => item.type === 'diagnostic'); // Example type
+        // Assuming diagnostic info (like CIE-10) is also an item in the task.items array
+        const diagnosticItem = task.items.find(item => item.type === 'diagnostic'); // Example, adjust if needed
         const diagnosticDisplay = diagnosticItem ?
             `<div class="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-md">
                 <span class="flex-grow">${diagnosticItem.content}</span>
                 <button class="text-blue-500"><i class="ph-x"></i></button>
-            </div>` : '';
+            </div>` :
+            // Fallback if no specific diagnostic item, could show the hardcoded one or allow adding new
+            `<div class="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-md">
+                <span class="flex-grow">I10 - Hipertensión Esencial (Primaria)</span>
+                <button class="text-blue-500"><i class="ph-x"></i></button>
+            </div>`;
+
 
         screenElement.innerHTML = `
-            <div class="flex items-center mb-4"><button id="back-to-home-from-review" class="text-2xl text-gray-600 mr-4"><i class="ph-arrow-left"></i></button><h1 class="text-xl font-bold text-gray-800">Revisar y Firmar Registro</h1></div>
-            <div class="bg-white p-3 rounded-lg border mb-4"><p class="text-sm text-center"><span class="font-bold">Paciente:</span> ${task.patient} | <span class="font-bold">Fecha:</span> ${new Date().toLocaleDateString('es-PE')}</p></div>
+            <div class="flex items-center mb-4">
+                <button id="back-to-home-from-review" class="text-2xl text-gray-600 mr-4"><i class="ph-arrow-left"></i></button>
+                <h1 class="text-xl font-bold text-gray-800">Revisar y Firmar Registro</h1>
+            </div>
+            <div class="bg-white p-3 rounded-lg border mb-4">
+                <p class="text-sm text-center"><span class="font-bold">Paciente:</span> ${task.patient} | <span class="font-bold">Fecha:</span> ${new Date().toLocaleDateString('es-PE')}</p>
+            </div>
             <div class="space-y-4">
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">S: Subjetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${subjectiveContent}</textarea></div></details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">O: Objetivo <i class="ph-caret-down"></i></summary><div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${objectiveContent}</textarea></div></details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">A: Apreciación / Diagnóstico <i class="ph-caret-down"></i></summary>
+                <details class="bg-white rounded-lg border" open>
+                    <summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">S: Subjetivo <i class="ph-caret-down"></i></summary>
+                    <div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${subjectiveContent}</textarea></div>
+                </details>
+                <details class="bg-white rounded-lg border" open>
+                    <summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">O: Objetivo <i class="ph-caret-down"></i></summary>
+                    <div class="p-3 border-t"><textarea class="w-full h-24 p-2 border rounded-md text-sm">${objectiveContent}</textarea></div>
+                </details>
+                <details class="bg-white rounded-lg border" open>
+                    <summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">A: Apreciación / Diagnóstico <i class="ph-caret-down"></i></summary>
                     <div class="p-3 border-t space-y-2">
                         ${diagnosticDisplay}
                         <input type="text" placeholder="Añadir diagnóstico (CIE-10)..." class="w-full p-2 border rounded-md text-sm">
                     </div>
                 </details>
-                <details class="bg-white rounded-lg border" open><summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">P: Plan de Trabajo <i class="ph-caret-down"></i></summary><div class="p-3 border-t space-y-3">
-                    ${planItemsToDisplay.length > 0 ? planItemsToDisplay.map(o => `
-                        <div class="p-3 border rounded-lg flex justify-between items-center ${o.status === 'confirmed' ? 'bg-gray-50' : 'bg-yellow-100 border-yellow-400'}">
-                            <div><p class="font-bold text-sm">${o.title}</p><p class="text-sm text-gray-600">${o.content}</p></div>
-                            <div class="flex flex-col space-y-1">
-                                ${o.status !== 'confirmed' ? `<button class="review-confirm-btn text-xs bg-green-100 text-green-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Confirmar</button>` : ''}
-                                <button class="review-edit-btn text-xs bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Editar</button>
+                <details class="bg-white rounded-lg border" open>
+                    <summary class="font-bold text-gray-800 p-3 cursor-pointer flex justify-between">P: Plan de Trabajo <i class="ph-caret-down"></i></summary>
+                    <div class="p-3 border-t space-y-3">
+                        ${planItems.length > 0 ? planItems.map(o => `
+                            <div class="p-3 border rounded-lg flex justify-between items-center ${o.status === 'confirmed' ? 'bg-gray-50' : 'bg-yellow-100 border-yellow-400'}">
+                                <div>
+                                    <p class="font-bold text-sm">${o.title}</p>
+                                    <p class="text-sm text-gray-600">${o.content}</p>
+                                </div>
+                                <div class="flex flex-col space-y-1">
+                                    ${o.status !== 'confirmed' ? `<button class="review-confirm-btn text-xs bg-green-100 text-green-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Confirmar</button>` : ''}
+                                    <button class="review-edit-btn text-xs bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded-full" data-task-id="${task.id}" data-item-id="${o.id}">Editar</button>
+                                </div>
                             </div>
-                        </div>`).join('') : '<p class="text-sm text-gray-500">No hay un plan de trabajo definido.</p>'}
-                    <button class="w-full text-sm font-semibold text-blue-600 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 review-add-btn" data-task-id="${task.id}">Añadir Item al Plan</button>
-                </div></details>
+                        `).join('') : '<p class="text-sm text-gray-500">No hay un plan de trabajo definido.</p>'}
+                        <button class="w-full text-sm font-semibold text-blue-600 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 review-add-btn" data-task-id="${task.id}">Añadir Item al Plan</button>
+                    </div>
+                </details>
             </div>
-            <div class="mt-6"><h4 class="font-semibold mb-2 text-gray-800">Firma del Médico</h4><div class="bg-gray-100 border-dashed border-2 border-gray-300 rounded-lg p-4 text-center"><img src="https://placehold.co/200x50/000000/ffffff?text=Dra.+Ana+Pérez" alt="[Firma del médico]" class="mx-auto"></div></div>
-            <div class="mt-2 text-center"><button id="sign-and-seal-btn" data-task-id="${task.id}" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold ${signButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${signButtonDisabled ? 'disabled' : ''}>Firmar y Sellar Registro</button>${signButtonDisabled ? '<p class="text-xs text-red-600 mt-2">Debe confirmar todas las sugerencias del Plan de Trabajo antes de firmar.</p>' : ''}</div>`;
+            <div class="mt-6">
+                <h4 class="font-semibold mb-2 text-gray-800">Firma del Médico</h4>
+                <div class="bg-gray-100 border-dashed border-2 border-gray-300 rounded-lg p-4 text-center">
+                    <img src="https://placehold.co/200x50/000000/ffffff?text=Dra.+Ana+Pérez" alt="[Firma del médico]" class="mx-auto">
+                </div>
+            </div>
+            <div class="mt-2 text-center">
+                <button id="sign-and-seal-btn" data-task-id="${task.id}" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold ${signButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}" ${signButtonDisabled ? 'disabled' : ''}>Firmar y Sellar Registro</button>
+                ${signButtonDisabled ? '<p class="text-xs text-red-600 mt-2">Debe confirmar todas las sugerencias del Plan de Trabajo antes de firmar.</p>' : ''}
+            </div>
+        `;
     }
 
     function renderCommunityForum(screenElement, filteredTopics = professionalData.forumTopics) {
@@ -708,7 +732,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('#back-to-home-from-review')) { showScreen('home'); }
         if (e.target.closest('#sign-and-seal-btn')) {
             const taskId = parseInt(e.target.dataset.taskId), task = tasks.find(t => t.id === taskId);
-            if (task) {
+            if (task) { // Ensure task.items is an array before using .some
+                if (Array.isArray(task.items) && task.items.some(item => ['order', 'follow-up', 'photo'].includes(item.type) && item.status === 'suggested')) {
+                    showToast('Debe confirmar todas las sugerencias del Plan de Trabajo antes de firmar.');
+                    return;
+                }
                 task.status = 'completed'; task.completedAt = new Date().toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
                 const countEl = document.getElementById('consultation-count'); animateValue(countEl, parseInt(countEl.textContent), parseInt(countEl.textContent) + 1, 1000);
                 const incomeEl = document.getElementById('income-count'); animateValue(incomeEl, parseFloat(incomeEl.textContent.replace('S/ ', '').replace(',', '')), parseFloat(incomeEl.textContent.replace('S/ ', '').replace(',', '')) + 150, 1000, true, 'S/');
@@ -729,10 +757,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = consultationItems.find(i => i.id === parseInt(e.target.closest('.card').dataset.id));
             if (item) { item.status = 'confirmed'; renderConsultationItems(); }
         }
+        // Corrected .review-confirm-btn handler
         if (e.target.closest('.review-confirm-btn')) {
-            const task = tasks.find(t => t.id === parseInt(e.target.dataset.taskId));
-            const item = task.items.find(i => i.id === parseInt(e.target.dataset.itemId));
-            if (item) { item.status = 'confirmed'; showScreen('reviewSign', parseInt(e.target.dataset.taskId)); }
+            const taskId = parseInt(e.target.dataset.taskId);
+            const itemId = parseInt(e.target.dataset.itemId);
+            const task = tasks.find(t => t.id === taskId);
+
+            if (task && Array.isArray(task.items)) {
+                const item = task.items.find(i => i.id === itemId);
+                if (item) {
+                    item.status = 'confirmed';
+                    showScreen('reviewSign', taskId);
+                } else {
+                    console.warn(`Item with ID ${itemId} not found in task ${taskId}`);
+                }
+            } else {
+                console.warn(`Task with ID ${taskId} not found or task.items is not an array.`);
+            }
         }
         if (e.target.closest('.ai-discard-btn')) {
             const item = consultationItems.find(i => i.id === parseInt(e.target.closest('.card').dataset.id));
@@ -750,13 +791,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const fromReview = e.target.dataset.fromReview === 'true';
             const taskId = parseInt(e.target.dataset.taskId);
             const selectedOptionValue = select.value;
-            const targetArray = fromReview ? tasks.find(t => t.id === taskId).items : consultationItems;
+            const taskForItems = tasks.find(t => t.id === taskId);
+            const targetArray = fromReview && taskForItems && Array.isArray(taskForItems.items) ? taskForItems.items : consultationItems;
+
             let itemToUpdate;
             let isNew = false;
 
-            if (!isNaN(parseInt(selectedOptionValue))) { // Existing item ID
+            if (!isNaN(parseInt(selectedOptionValue))) {
                 itemToUpdate = targetArray.find(i => i.id === parseInt(selectedOptionValue));
-            } else { // New item type
+            } else {
                 isNew = true;
                 const newType = selectedOptionValue;
                 const titles = { 'prescription': 'PRESCRIPCIÓN', 'lab_order': 'ORDEN DE LABORATORIO', 'certificate': 'CERTIFICADO DE DESCANSO' };
@@ -766,7 +809,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (itemToUpdate) {
                 itemToUpdate.content = textarea.value;
-                itemToUpdate.status = 'confirmed'; // Always confirm on save from this modal
+                itemToUpdate.status = 'confirmed';
                 if (isNew) {
                     targetArray.push(itemToUpdate);
                 }
@@ -1035,18 +1078,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openManualAddModal(itemIdToEdit = null, fromReview = false, taskId = null) {
-        const targetArray = fromReview ? tasks.find(t => t.id === taskId).items : consultationItems;
-        const suggestedItems = targetArray.filter(item => item.status === 'suggested');
-        const itemToEdit = targetArray.find(item => item.id === itemIdToEdit);
+        const taskForItems = fromReview ? tasks.find(t => t.id === taskId) : null;
+        const currentTaskItems = taskForItems && Array.isArray(taskForItems.items) ? taskForItems.items : consultationItems;
+
+        const suggestedItems = currentTaskItems.filter(item => item.status === 'suggested');
+        const itemToEdit = itemIdToEdit ? currentTaskItems.find(item => item.id === itemIdToEdit) : null;
+
         let optionsHtml = suggestedItems.map(item => `<option value="${item.id}">Editar sugerencia: ${item.title}</option>`).join('');
-        optionsHtml += `<option value="prescription" ${itemToEdit ? 'disabled' : ''}>Añadir nueva Prescripción</option><option value="lab_order" ${itemToEdit ? 'disabled' : ''}>Añadir nueva Orden de Lab.</option><option value="certificate" ${itemToEdit ? 'disabled' : ''}>Añadir nuevo Certificado</option>`;
-        const modalContent = itemToEdit ? itemToEdit.content : '', modalTitle = itemToEdit ? `Editar: ${itemToEdit.title}` : 'Añadir/Editar Plan de Trabajo';
-        showModal(`<div class="modal-overlay"><div class="modal-content"><h2 class="font-bold text-lg text-gray-800 mb-4">${modalTitle}</h2><select id="manual-item-select" class="w-full p-2 border rounded-md mb-2 ${itemToEdit ? 'hidden' : ''}">${optionsHtml}</select><div class="textarea-container"><textarea id="manual-item-content" class="w-full p-2 pr-10 border rounded-md h-24" placeholder="Detalles...">${modalContent}</textarea><button class="dictate-icon-btn"><i class="ph-microphone"></i></button></div><div class="flex space-x-2 mt-4"><button class="w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold modal-close-btn">Cancelar</button><button id="confirm-manual-add-btn" data-task-id="${taskId}" data-from-review="${fromReview}" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold">Guardar</button></div></div></div>`);
-        const select = document.getElementById('manual-item-select'), textarea = document.getElementById('manual-item-content');
-        if (itemToEdit) { select.innerHTML = `<option value="${itemToEdit.id}" selected>${itemToEdit.title}</option>`; select.disabled = true; }
+        optionsHtml += `
+            <option value="prescription" ${itemToEdit ? 'disabled' : ''}>Añadir nueva Prescripción</option>
+            <option value="lab_order" ${itemToEdit ? 'disabled' : ''}>Añadir nueva Orden de Lab.</option>
+            <option value="certificate" ${itemToEdit ? 'disabled' : ''}>Añadir nuevo Certificado</option>
+        `;
+
+        const modalContent = itemToEdit ? itemToEdit.content : '';
+        const modalTitle = itemToEdit ? `Editar: ${itemToEdit.title}` : 'Añadir/Editar Plan de Trabajo';
+
+        showModal(`<div class="modal-overlay"><div class="modal-content"><h2 class="font-bold text-lg text-gray-800 mb-4">${modalTitle}</h2><select id="manual-item-select" class="w-full p-2 border rounded-md mb-2 ${itemToEdit ? 'hidden' : ''}">${optionsHtml}</select><div class="textarea-container"><textarea id="manual-item-content" class="w-full p-2 pr-10 border rounded-md h-24" placeholder="Detalles...">${modalContent}</textarea><button class="dictate-icon-btn"><i class="ph-microphone"></i></button></div><div class="flex space-x-2 mt-4"><button class="w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold modal-close-btn">Cancelar</button><button id="confirm-manual-add-btn" data-task-id="${taskId || ''}" data-from-review="${fromReview}" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold">Guardar</button></div></div></div>`);
+
+        const select = document.getElementById('manual-item-select');
+        const textarea = document.getElementById('manual-item-content');
+        if (itemToEdit) {
+            select.innerHTML = `<option value="${itemToEdit.id}" selected>${itemToEdit.title}</option>`;
+            select.disabled = true;
+        }
+
         select.addEventListener('change', (e) => {
             const selectedId = parseInt(e.target.value);
-            textarea.value = !isNaN(selectedId) ? (targetArray.find(i => i.id === selectedId)?.content || '') : '';
+            const sourceArray = fromReview && taskForItems && Array.isArray(taskForItems.items) ? taskForItems.items : consultationItems;
+            textarea.value = !isNaN(selectedId) ? (sourceArray.find(i => i.id === selectedId)?.content || '') : '';
         });
     }
 
