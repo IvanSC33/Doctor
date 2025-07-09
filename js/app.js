@@ -116,11 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProfile,
         renderWaitingRoom,
         renderConsultationScreen,
-        renderReviewSignScreen, // This will now be the corrected version
+        renderReviewSignScreen,
         renderPaymentMethodDetails,
     });
-
-    // --- START OF LOCAL RENDER FUNCTIONS (To be moved later) ---
 
     function renderAgenda(screenElement) {
         if (!screenElement) screenElement = globalScreensRef.agenda;
@@ -560,24 +558,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const subjectiveContent = task.items.find(item => item.type === 'subjective')?.content || '';
         const objectiveContent = task.items.find(item => item.type === 'objective')?.content || '';
+
         const planItems = task.items.filter(item =>
             ['order', 'follow-up', 'photo'].includes(item.type) && item.status !== 'discarded'
         );
+
         const signButtonDisabled = planItems.some(item => item.status === 'suggested');
 
-        // Assuming diagnostic info (like CIE-10) is also an item in the task.items array
-        const diagnosticItem = task.items.find(item => item.type === 'diagnostic'); // Example, adjust if needed
+        const diagnosticItem = task.items.find(item => item.type === 'diagnostic');
         const diagnosticDisplay = diagnosticItem ?
             `<div class="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-md">
                 <span class="flex-grow">${diagnosticItem.content}</span>
                 <button class="text-blue-500"><i class="ph-x"></i></button>
             </div>` :
-            // Fallback if no specific diagnostic item, could show the hardcoded one or allow adding new
             `<div class="flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1.5 rounded-md">
                 <span class="flex-grow">I10 - Hipertensión Esencial (Primaria)</span>
                 <button class="text-blue-500"><i class="ph-x"></i></button>
             </div>`;
-
 
         screenElement.innerHTML = `
             <div class="flex items-center mb-4">
@@ -732,8 +729,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('#back-to-home-from-review')) { showScreen('home'); }
         if (e.target.closest('#sign-and-seal-btn')) {
             const taskId = parseInt(e.target.dataset.taskId), task = tasks.find(t => t.id === taskId);
-            if (task) { // Ensure task.items is an array before using .some
-                if (Array.isArray(task.items) && task.items.some(item => ['order', 'follow-up', 'photo'].includes(item.type) && item.status === 'suggested')) {
+            if (task) {
+                // Ensure task.items is an array before using .some or other array methods
+                const planItems = Array.isArray(task.items) ? task.items.filter(item => ['order', 'follow-up', 'photo'].includes(item.type)) : [];
+                if (planItems.some(item => item.status === 'suggested')) {
                     showToast('Debe confirmar todas las sugerencias del Plan de Trabajo antes de firmar.');
                     return;
                 }
@@ -757,7 +756,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = consultationItems.find(i => i.id === parseInt(e.target.closest('.card').dataset.id));
             if (item) { item.status = 'confirmed'; renderConsultationItems(); }
         }
-        // Corrected .review-confirm-btn handler
         if (e.target.closest('.review-confirm-btn')) {
             const taskId = parseInt(e.target.dataset.taskId);
             const itemId = parseInt(e.target.dataset.itemId);
@@ -791,7 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fromReview = e.target.dataset.fromReview === 'true';
             const taskId = parseInt(e.target.dataset.taskId);
             const selectedOptionValue = select.value;
-            const taskForItems = tasks.find(t => t.id === taskId);
+            const taskForItems = tasks.find(t => t.id === taskId); // Ensure tasks is accessible
             const targetArray = fromReview && taskForItems && Array.isArray(taskForItems.items) ? taskForItems.items : consultationItems;
 
             let itemToUpdate;
@@ -1156,3 +1154,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2500);
     }
 });
+
+[end of js/app.js]
